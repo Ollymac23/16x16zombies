@@ -126,60 +126,76 @@ all_sprites = pygame.sprite.Group(player)
 dt = 0
 held = []
 queued = None
+font = pygame.font.Font(ASSETS / "dogicabold.ttf", 32)
+title = font.render("16x16", False, (255, 255, 255))
+titleRect = title.get_rect(center=(256, 64))
 
-
-
+playing = False
 
 while running:
-    dt = clock.tick(60)
-    moveTimer = max(0, moveTimer - dt)
 
+    dt = clock.tick(60)
+
+    screen.fill((100, 100, 100))
+    screen.blit(title, titleRect)
+
+
+
+
+    while playing:
+        dt = clock.tick(60)
+        moveTimer = max(0, moveTimer - dt)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key in KEY_MOVES:
+                held.append(event.key)
+                queued = event.key
+
+            elif event.type == pygame.KEYUP and event.key in held:
+                held.remove(event.key)
+
+        key = None
+        if queued is not None:
+            key = queued
+            queued = None
+            moveTimer = REPEAT_DELAY
+        elif held and moveTimer == 0:
+            key = held[-1]
+            moveTimer = REPEAT_DELAY
+
+        if key is not None:
+            player.move(*KEY_MOVES[key])
+
+
+        player.update()
+
+
+
+
+        # drawing stuff
+        screen.fill((100, 100, 100))
+        # stuff to be seen
+
+        
+        all_sprites.draw(screen)
+
+        obstacles.draw(screen)
+
+        webs.draw(screen)
+
+        for i in range(17):
+            pygame.draw.line(screen, (20, 20, 20), (i*32 - 1, 0), (i*32 - 1, 512), 2)
+            pygame.draw.line(screen, (20, 20, 20), (0, i*32 - 1), (512, i*32 - 1), 2)
+
+
+
+
+        pygame.display.flip()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.KEYDOWN and event.key in KEY_MOVES:
-            held.append(event.key)
-            queued = event.key
-
-        elif event.type == pygame.KEYUP and event.key in held:
-            held.remove(event.key)
-
-    key = None
-    if queued is not None:
-        key = queued
-        queued = None
-        moveTimer = REPEAT_DELAY
-    elif held and moveTimer == 0:
-        key = held[-1]
-        moveTimer = REPEAT_DELAY
-
-    if key is not None:
-        player.move(*KEY_MOVES[key])
-
-
-    player.update()
-
-
-
-
-    # drawing stuff
-    screen.fill((100, 100, 100))
-    # stuff to be seen
-
-    
-    all_sprites.draw(screen)
-
-    obstacles.draw(screen)
-
-    webs.draw(screen)
-
-    for i in range(17):
-        pygame.draw.line(screen, (20, 20, 20), (i*32 - 1, 0), (i*32 - 1, 512), 2)
-        pygame.draw.line(screen, (20, 20, 20), (0, i*32 - 1), (512, i*32 - 1), 2)
-
-
-
-
     pygame.display.flip()
 
 
