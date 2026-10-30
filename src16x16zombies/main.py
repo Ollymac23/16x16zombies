@@ -7,7 +7,7 @@ pygame.init()
 screen = pygame.display.set_mode((512, 512))
 clock = pygame.time.Clock()
 running = True
-
+playing = False
 
 
 
@@ -83,13 +83,37 @@ class Rock(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(tilex*TILE, tiley*TILE))
 
 
+class Button:
+    def __init__(self, text, rect, font, callback, color=(100, 100, 100), hoverColor=(125, 125, 125), textColor=(255, 255, 255)):
+        self.label = font.render(text, False, textColor)
+        self.rect = pygame.rect.Rect(rect)
+        self.color = color
+        self.hoverColor = hoverColor
+        self.labelRect = self.label.get_rect(center=self.rect.center)
+        self.callback = callback
+
+    def handleEvent(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                self.callback()
+
+    def draw(self, surface):
+        hovered = self.rect.collidepoint(pygame.mouse.get_pos())
+        pygame.draw.rect(surface, self.hoverColor if hovered else self.color, self.rect, border_radius=4)
+        pygame.draw.rect(surface, (20, 20, 20), self.rect, 2, border_radius=4)
+        surface.blit(self.label, self,self.labelRect)
 
 
 
+def StartGame():
+    global state
+    state = "playing"
 
 
 
+buttonFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
 
+startButton = Button("PLAY", ((256, 425), (85, 40)), buttonFont, StartGame)
 
 obstacles = pygame.sprite.Group()
 webs = pygame.sprite.Group()
@@ -126,26 +150,31 @@ all_sprites = pygame.sprite.Group(player)
 dt = 0
 held = []
 queued = None
-font = pygame.font.Font(ASSETS / "dogicabold.ttf", 32)
-title = font.render("16x16", False, (255, 255, 255))
+titleFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 64)
+titleFont.align = pygame.FONT_CENTER
+descriptionFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
+descriptionFont.align = pygame.FONT_CENTER
+title = titleFont.render("16x16", False, (255, 255, 255))
 titleRect = title.get_rect(center=(256, 64))
+description = descriptionFont.render("A tile based game. You must reach the green flag" \
+" without being killed by the zombies. A score is" \
+" calculated by speed and how many items you collect.", False, (255, 255, 255), wraplength=512,)
+descriptionRect = description.get_rect(center=(256, 200))
 
-playing = False
+
 
 while running:
 
     dt = clock.tick(60)
-
+    moveTimer = max(0, moveTimer - dt)
     screen.fill((100, 100, 100))
     screen.blit(title, titleRect)
+    screen.blit(description, descriptionRect)
+    startButton.draw(screen)
 
 
 
-
-    while playing:
-        dt = clock.tick(60)
-        moveTimer = max(0, moveTimer - dt)
-
+    if state == "playing":
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -155,6 +184,8 @@ while running:
 
             elif event.type == pygame.KEYUP and event.key in held:
                 held.remove(event.key)
+            else:
+                startButton.handleEvent(event) 
 
         key = None
         if queued is not None:
@@ -178,7 +209,8 @@ while running:
         screen.fill((100, 100, 100))
         # stuff to be seen
 
-        
+            
+            
         all_sprites.draw(screen)
 
         obstacles.draw(screen)
@@ -192,14 +224,7 @@ while running:
 
 
 
-        pygame.display.flip()
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
     pygame.display.flip()
 
-
-
-    
 
 pygame.quit()
