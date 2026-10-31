@@ -7,12 +7,13 @@ pygame.init()
 screen = pygame.display.set_mode((512, 512))
 clock = pygame.time.Clock()
 running = True
-playing = False
+stuck = False
 
 
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 SCALE = 2
+ZOMBIE_COUNT = 6
 distMove = 32
 TILE = 32
 KEY_MOVES = {
@@ -26,6 +27,7 @@ REPEAT_DELAY = 150
 ROCK_COUNT = 64
 WEB_COUNT = 8
 moveTimer = 150
+state = "running"
 
 PLAYER_IMAGES = [
     pygame.transform.scale_by(
@@ -33,6 +35,26 @@ PLAYER_IMAGES = [
     )
     for i in range(4)
     ]
+
+def GenerateMove():
+    direction = rand.randint(0, 3)
+    match direction:
+        case 0:
+            move = (0, -distMove)
+        case 1:
+            move = (distMove, 0)
+        case 2:
+            move = (0, distMove)
+        case 3:
+            move = (-distMove, 0)
+    return move
+
+def GeneratePos():
+    x = (rand.randint(0, 15))*TILE
+    y = (rand.randint(0, 15))*TILE
+
+    return (x, y)
+
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, width, height):
@@ -50,13 +72,14 @@ class Player(pygame.sprite.Sprite):
 
 
     def move(self, dx, dy):
+        global stuck
         self.rect.x += dx
         self.rect.y += dy
         if pygame.sprite.spritecollide(player, obstacles, False):
             self.rect.x -= dx
             self.rect.y -= dy
         if pygame.sprite.spritecollide(player, webs, False):
-            moveTimer = 1000
+            stuck = True
         if 0 > self.rect.x or self.rect.x > 510:
             self.rect.x -= dx
         if 0 > self.rect.y or self.rect.y > 510:
@@ -79,8 +102,38 @@ class Rock(pygame.sprite.Sprite):
         if image is None:
             image = pygame.Surface((TILE, TILE))
             image.fill((60, 60, 60))
-        self. image = image
+        self.image = image
         self.rect = self.image.get_rect(topleft=(tilex*TILE, tiley*TILE))
+
+class Zombie(pygame.sprite.Sprite):
+    def __init__(self, image=None):
+        super().__init__()
+        if image is None:
+            image = pygame.Surface((TILE, TILE))
+            image.fill((64, 150, 64))
+        self.image = image
+        self.rect = self.image.get_rect()
+        pos = GeneratePos()
+        while pos in rocks:
+            pos = GeneratePos()
+        self.rect.topleft = pos
+
+
+    def move(self):
+
+        dx, dy = GenerateMove()
+
+        self.rect.x += dx
+        self. rect.y += dy
+
+        while pygame.sprite.spritecollide(self, obstacles, False) or self.rect.x < 0 or self.rect.x > 510 or self.rect.y < 0 or self.rect.y > 510:
+            self.rect.x -= dx
+            self.rect.y -= dy
+
+            dx, dy = GenerateMove()
+
+            self.rect.x += dx
+            self.rect.y += dy
 
 
 class Button:
@@ -101,14 +154,12 @@ class Button:
         hovered = self.rect.collidepoint(pygame.mouse.get_pos())
         pygame.draw.rect(surface, self.hoverColor if hovered else self.color, self.rect, border_radius=4)
         pygame.draw.rect(surface, (20, 20, 20), self.rect, 2, border_radius=4)
-        surface.blit(self.label, self,self.labelRect)
-
+        surface.blit(self.label, self.labelRect)
 
 
 def StartGame():
     global state
     state = "playing"
-
 
 
 buttonFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
@@ -117,6 +168,9 @@ startButton = Button("PLAY", ((256, 425), (85, 40)), buttonFont, StartGame)
 
 obstacles = pygame.sprite.Group()
 webs = pygame.sprite.Group()
+zombies = pygame.sprite.Group()
+
+
 
 rocks = []
 for i in range(ROCK_COUNT):
@@ -143,6 +197,8 @@ for i in range(WEB_COUNT):
     if (j, k) not in rocks:
         webs.add(Web(j, k))
 
+for i in range(ZOMBIE_COUNT):
+    zombies.add(Zombie())
 
 
 player = Player(16, 16)
@@ -160,44 +216,53 @@ description = descriptionFont.render("A tile based game. You must reach the gree
 " without being killed by the zombies. A score is" \
 " calculated by speed and how many items you collect.", False, (255, 255, 255), wraplength=512,)
 descriptionRect = description.get_rect(center=(256, 200))
-
-
+frameCount = 0
 
 while running:
 
+    frameCount += 1
     dt = clock.tick(60)
     moveTimer = max(0, moveTimer - dt)
-    screen.fill((100, 100, 100))
-    screen.blit(title, titleRect)
-    screen.blit(description, descriptionRect)
-    startButton.draw(screen)
+
+
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN and event.key in KEY_MOVES:
+            held.append(event.key)
+            queued = event.key
+
+        elif event.type == pygame.KEYUP and event.key in held:
+            held.remove(event.key)
+        else:
+            startButton.handleEvent(event)
+
+    key = None
+    if queued is not None:
+        key = queued
+        queued = None
+        if stuck:
+            moveTimer = 1000
+            stuck = False
+        else:
+            moveTimer = REPEAT_DELAY
+    elif held and moveTimer == 0:
+        key = held[-1]
+        if stuck:
+            moveTimer = 1000
+            stuck = False
+        else:
+            moveTimer = REPEAT_DELAY
+
+
+    if key is not None:
+        player.move(*KEY_MOVES[key])
 
 
 
     if state == "playing":
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN and event.key in KEY_MOVES:
-                held.append(event.key)
-                queued = event.key
 
-            elif event.type == pygame.KEYUP and event.key in held:
-                held.remove(event.key)
-            else:
-                startButton.handleEvent(event) 
-
-        key = None
-        if queued is not None:
-            key = queued
-            queued = None
-            moveTimer = REPEAT_DELAY
-        elif held and moveTimer == 0:
-            key = held[-1]
-            moveTimer = REPEAT_DELAY
-
-        if key is not None:
-            player.move(*KEY_MOVES[key])
 
 
         player.update()
@@ -213,6 +278,14 @@ while running:
             
         all_sprites.draw(screen)
 
+        if frameCount % 45 == 0:
+            for zombie in zombies:
+                zombie.move()
+
+        zombies.draw(screen)
+
+
+
         obstacles.draw(screen)
 
         webs.draw(screen)
@@ -220,7 +293,11 @@ while running:
         for i in range(17):
             pygame.draw.line(screen, (20, 20, 20), (i*32 - 1, 0), (i*32 - 1, 512), 2)
             pygame.draw.line(screen, (20, 20, 20), (0, i*32 - 1), (512, i*32 - 1), 2)
-
+    else:
+        screen.fill((100, 100, 100))
+        screen.blit(title, titleRect)
+        screen.blit(description, descriptionRect)
+        startButton.draw(screen)
 
 
 
