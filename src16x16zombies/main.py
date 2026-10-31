@@ -24,7 +24,7 @@ KEY_MOVES = {
     
 }
 REPEAT_DELAY = 150
-ROCK_COUNT = 64
+ROCK_COUNT = 72
 WEB_COUNT = 8
 moveTimer = 150
 state = "running"
@@ -105,6 +105,7 @@ class Rock(pygame.sprite.Sprite):
         self.image = image
         self.rect = self.image.get_rect(topleft=(tilex*TILE, tiley*TILE))
 
+
 class Zombie(pygame.sprite.Sprite):
     def __init__(self, image=None):
         super().__init__()
@@ -136,10 +137,22 @@ class Zombie(pygame.sprite.Sprite):
             self.rect.y += dy
 
 
+class Flag(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+
+        image = pygame.Surface((TILE, TILE))
+        image.fill((0, 255, 0))
+        self.image = image
+        self.rect = image.get_rect()
+        self.rect.topleft = (14*TILE, 14*TILE)
+
+
 class Button:
     def __init__(self, text, rect, font, callback, color=(100, 100, 100), hoverColor=(125, 125, 125), textColor=(255, 255, 255)):
         self.label = font.render(text, False, textColor)
         self.rect = pygame.rect.Rect(rect)
+        self.rect.center = rect[0]
         self.color = color
         self.hoverColor = hoverColor
         self.labelRect = self.label.get_rect(center=self.rect.center)
@@ -169,6 +182,9 @@ startButton = Button("PLAY", ((256, 425), (85, 40)), buttonFont, StartGame)
 obstacles = pygame.sprite.Group()
 webs = pygame.sprite.Group()
 zombies = pygame.sprite.Group()
+finishFlag = pygame.sprite.Group()
+
+finishFlag.add(Flag())
 
 
 
@@ -176,11 +192,9 @@ rocks = []
 for i in range(ROCK_COUNT):
     j = rand.randint(0, 15)
     k = rand.randint(0, 15)
-    if j == 0 and k == 0:
+    if j < 3 and k <3:
         continue
-    if j == 1 and k == 0:
-        continue
-    if j == 2 and k == 0:
+    if j > 12 and k > 12:
         continue
     obstacles.add(Rock(j, k))
     rocks.append((j, k))
@@ -194,6 +208,7 @@ for i in range(WEB_COUNT):
         continue
     if j == 2 and k == 0:
         continue
+
     if (j, k) not in rocks:
         webs.add(Web(j, k))
 
@@ -263,28 +278,21 @@ while running:
 
     if state == "playing":
 
-
-
         player.update()
-
-
-
 
         # drawing stuff
         screen.fill((100, 100, 100))
-        # stuff to be seen
 
-            
-            
+        # stuff to be seen
         all_sprites.draw(screen)
+
+        finishFlag.draw(screen)
 
         if frameCount % 45 == 0:
             for zombie in zombies:
                 zombie.move()
 
         zombies.draw(screen)
-
-
 
         obstacles.draw(screen)
 
