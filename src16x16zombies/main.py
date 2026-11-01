@@ -61,8 +61,8 @@ def GeneratePos():
 class Player(pygame.sprite.Sprite):
     def __init__(self, width, height):
         super().__init__()
-        self.health = 3
-        self.image = PLAYER_IMAGES[self.health]
+        self.health = 30
+        self.image = PLAYER_IMAGES[((self.health)//10)]
         self.rect = self.image.get_rect(center=(width, height))
         self.pos = pygame.Vector2(self.rect.center)
         self.coins = 0
@@ -70,13 +70,16 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         self.pos = pygame.Vector2(self.rect.center)
-        self.image = PLAYER_IMAGES[self.health]
+        self.image = PLAYER_IMAGES[((self.health)//10)]
         self.rect = self.image.get_rect(center=self.pos)
         if pygame.sprite.spritecollide(player, finishFlag, False):
             FinishGame()
+        if self.health < 1:
+            GameOver()
 
         if pygame.sprite.spritecollide(player, zombies, False):
             self.health -= 1
+
 
 
     def move(self, dx, dy):
@@ -251,9 +254,6 @@ finishFlag.add(Flag())
 rocks = []
 
 
-
-
-
 player = Player(16, 16)
 all_sprites = pygame.sprite.Group(player)
 dt = 0
@@ -274,6 +274,13 @@ description = descriptionFont.render("A tile based game. You must reach the gree
 " calculated by speed and how many items you collect.", False, (255, 255, 255), wraplength=512,)
 descriptionRect = description.get_rect(center=(256, 200))
 
+#other text for dying
+GameOverText = titleFont.render("GAME OVER", False, (255, 255, 255))
+GameOverRect = GameOverText.get_rect(center=(256, 128))
+
+#restart instructions
+instructionText = descriptionFont.render("Main menu to play again", False, (255, 255, 255))
+instructionRect = instructionText.get_rect(center=(256, 256))
 
 frameCount = 0
 
@@ -283,6 +290,8 @@ def ResetGame():
     webs.empty()
     zombies.empty()
     rocks = []
+    player.health = 30
+    player.coins = 0
 
     for i in range(ROCK_COUNT):
         j = rand.randint(0, 15)
@@ -422,6 +431,12 @@ while running:
         screen.blit(title, titleRect)
         screen.blit(description, descriptionRect)
         startButton.draw(screen)
+
+    elif state == "gameOver":
+        screen.fill((100, 10, 10))
+        screen.blit(GameOverText, GameOverRect)
+        screen.blit(instructionText, instructionRect)
+        restartButton.draw(screen)
 
 
 
