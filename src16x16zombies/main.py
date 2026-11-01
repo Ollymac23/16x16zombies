@@ -9,7 +9,7 @@ clock = pygame.time.Clock()
 running = True
 stuck = False
 timeBegin = 0
-highScore = 0
+highScore = None
 
 
 
@@ -65,6 +65,7 @@ class Player(pygame.sprite.Sprite):
         self.image = PLAYER_IMAGES[self.health]
         self.rect = self.image.get_rect(center=(width, height))
         self.pos = pygame.Vector2(self.rect.center)
+        self.coins = 0
 
 
     def update(self):
@@ -177,6 +178,35 @@ class Button:
         surface.blit(self.label, self.labelRect)
 
 
+class Coin(pygame.sprite.Sprite):
+    def __init__(self, image=None):
+        super().__init__()
+        global rocks
+        if image == None:
+            image = pygame.Surface((TILE, TILE))
+            image.fill((250, 230, 0))
+        self.image = image
+        self.rect = self.image.get_rect()
+        pos = GeneratePos()
+        while pos in rocks:
+            pos = GeneratePos()
+        j, k = pos
+        while j < 3 and k < 3:
+            pos = GeneratePos()
+            j, k = pos
+        while j > 12 and k > 12:
+            pos = GeneratePos()
+            j, k = pos
+        self.rect.topleft = (j*TILE, k*TILE)
+        self.collected = False
+    def update(self):
+        if pygame.sprite.spritecollide(player, coins, False):
+            for sprite in coins:
+                if sprite.topleft == player.topleft:
+                    player.coins += 1
+                    sprite.collected = True
+
+
 def StartGame():
     global state
     state = "playing"
@@ -191,12 +221,13 @@ def FinishGame():
 
 def UpdateHighScore(score):
     global highScore
-    if highScore > score:
+    if highScore is None or highScore > score:
         highScore = score
 
 def ReturnMenu():
     global state
     state = "mainMenu"
+    ResetGame()
 
 
 buttonFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
@@ -208,57 +239,79 @@ obstacles = pygame.sprite.Group()
 webs = pygame.sprite.Group()
 zombies = pygame.sprite.Group()
 finishFlag = pygame.sprite.Group()
+coins = pygame.sprite.Group()
 
 finishFlag.add(Flag())
 
-
-
 rocks = []
-for i in range(ROCK_COUNT):
-    j = rand.randint(0, 15)
-    k = rand.randint(0, 15)
-    if j < 3 and k <3:
-        continue
-    if j > 12 and k > 12:
-        continue
-    obstacles.add(Rock(j, k))
-    rocks.append((j, k))
-
-for i in range(WEB_COUNT):
-    j = rand.randint(0, 15)
-    k = rand.randint(0, 15)
-    if j < 3 and k < 3:
-        continue
-    if j > 12 and k > 12:
-        continue
 
 
-    if (j, k) not in rocks:
-        webs.add(Web(j, k))
-
-for i in range(ZOMBIE_COUNT):
-    zombies.add(Zombie())
-
+for i in range(3):
+    coins.add(Coin())
 
 player = Player(16, 16)
 all_sprites = pygame.sprite.Group(player)
 dt = 0
 held = []
 queued = None
+
+#title stuff
 titleFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 64)
 titleFont.align = pygame.FONT_CENTER
-descriptionFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
-descriptionFont.align = pygame.FONT_CENTER
 title = titleFont.render("16x16", False, (255, 255, 255))
 titleRect = title.get_rect(center=(256, 64))
+
+#description stuff
+descriptionFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
+descriptionFont.align = pygame.FONT_CENTER
 description = descriptionFont.render("A tile based game. You must reach the green flag" \
 " without being killed by the zombies. A score is" \
 " calculated by speed and how many items you collect.", False, (255, 255, 255), wraplength=512,)
 descriptionRect = description.get_rect(center=(256, 200))
+
+
 frameCount = 0
 
+def ResetGame():
+    global rocks, held, queued, stuck
+    obstacles.empty()
+    webs.empty()
+    zombies.empty()
+    rocks = []
 
+    for i in range(ROCK_COUNT):
+        j = rand.randint(0, 15)
+        k = rand.randint(0, 15)
+        if j < 3 and k < 3:
+            continue
+        if j > 12 and k > 12:
+            continue
+        rocks.append((j, k))
+        obstacles.add(Rock(j, k))
+    for i in range(WEB_COUNT):
+        if j < 3 and k < 3:
+            continue
+        if j > 12 and k > 12:
+            continue
+
+        if (j, k) not in rocks:
+            webs.add(Web(j, k))
+
+    for i in range(ZOMBIE_COUNT):
+        zombies.add(Zombie())
+
+
+    player.health = 3
+    player.rect.topleft = (0, 0)
+    held = []
+    queued = None
+    stuck = None
+
+
+ResetGame()
 while running:
+
+    
 
     frameCount += 1
     dt = clock.tick(60)
@@ -277,7 +330,7 @@ while running:
             held.remove(event.key)
         else:
             startButton.handleEvent(event)
-            startButton.handleEvent(event)
+            restartButton.handleEvent(event)
 
     key = None
     if queued is not None:
@@ -305,6 +358,8 @@ while running:
     if state == "playing":
 
         player.update()
+        for sprite in coins:
+            sprite.update()
 
         # drawing stuff
         screen.fill((100, 100, 100))
@@ -323,6 +378,8 @@ while running:
         obstacles.draw(screen)
 
         webs.draw(screen)
+
+        coins.draw(screen)
 
         for i in range(17):
             pygame.draw.line(screen, (20, 20, 20), (i*32 - 1, 0), (i*32 - 1, 512), 2)
@@ -350,6 +407,7 @@ while running:
 
 
     elif state == "mainMenu":
+
         screen.fill((100, 100, 100))
         screen.blit(title, titleRect)
         screen.blit(description, descriptionRect)
