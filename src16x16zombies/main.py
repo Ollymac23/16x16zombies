@@ -253,6 +253,7 @@ rocks = []
 
 
 
+
 player = Player(16, 16)
 all_sprites = pygame.sprite.Group(player)
 dt = 0
