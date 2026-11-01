@@ -8,6 +8,8 @@ screen = pygame.display.set_mode((512, 512))
 clock = pygame.time.Clock()
 running = True
 stuck = False
+timeBegin = 0
+highScore = 0
 
 
 
@@ -27,7 +29,7 @@ REPEAT_DELAY = 150
 ROCK_COUNT = 72
 WEB_COUNT = 8
 moveTimer = 150
-state = "running"
+state = "mainMenu"
 
 PLAYER_IMAGES = [
     pygame.transform.scale_by(
@@ -69,6 +71,11 @@ class Player(pygame.sprite.Sprite):
         self.pos = pygame.Vector2(self.rect.center)
         self.image = PLAYER_IMAGES[self.health]
         self.rect = self.image.get_rect(center=self.pos)
+        if pygame.sprite.spritecollide(player, finishFlag, False):
+            FinishGame()
+
+        if pygame.sprite.spritecollide(player, zombies, False):
+            self.health -= 1
 
 
     def move(self, dx, dy):
@@ -173,11 +180,29 @@ class Button:
 def StartGame():
     global state
     state = "playing"
+    global timeBegin
+    timeBegin = pygame.time.get_ticks()
+
+def FinishGame():
+    global timeStop
+    timeStop = pygame.time.get_ticks()
+    global state
+    state = "finished"
+
+def UpdateHighScore(score):
+    global highScore
+    if highScore > score:
+        highScore = score
+
+def ReturnMenu():
+    global state
+    state = "mainMenu"
 
 
 buttonFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
 
-startButton = Button("PLAY", ((256, 425), (85, 40)), buttonFont, StartGame)
+startButton = Button("PLAY", ((256, 400), (85, 40)), buttonFont, StartGame)
+restartButton = Button("MAIN MENU", ((256, 464), (140, 40)), buttonFont, ReturnMenu)
 
 obstacles = pygame.sprite.Group()
 webs = pygame.sprite.Group()
@@ -202,12 +227,11 @@ for i in range(ROCK_COUNT):
 for i in range(WEB_COUNT):
     j = rand.randint(0, 15)
     k = rand.randint(0, 15)
-    if j == 0 and k == 0:
+    if j < 3 and k < 3:
         continue
-    if j == 1 and k == 0:
+    if j > 12 and k > 12:
         continue
-    if j == 2 and k == 0:
-        continue
+
 
     if (j, k) not in rocks:
         webs.add(Web(j, k))
@@ -233,6 +257,7 @@ description = descriptionFont.render("A tile based game. You must reach the gree
 descriptionRect = description.get_rect(center=(256, 200))
 frameCount = 0
 
+
 while running:
 
     frameCount += 1
@@ -251,6 +276,7 @@ while running:
         elif event.type == pygame.KEYUP and event.key in held:
             held.remove(event.key)
         else:
+            startButton.handleEvent(event)
             startButton.handleEvent(event)
 
     key = None
@@ -301,7 +327,29 @@ while running:
         for i in range(17):
             pygame.draw.line(screen, (20, 20, 20), (i*32 - 1, 0), (i*32 - 1, 512), 2)
             pygame.draw.line(screen, (20, 20, 20), (0, i*32 - 1), (512, i*32 - 1), 2)
-    else:
+
+
+    elif state == "finished":
+
+
+        time = (timeStop - timeBegin)/1000
+        UpdateHighScore(time)
+        screen.fill((100, 100, 100))
+        highScoreText = titleFont.render(f"Best time: {highScore}s", False, (255, 255, 255))
+        highScoreRect = highScoreText.get_rect()
+        highScoreRect.center = (256, 128)
+        screen.blit(highScoreText, highScoreRect)
+
+
+
+        score = titleFont.render(f"Your time: {time}s", False, (255, 255, 255))
+        scoreRect = score.get_rect()
+        scoreRect.center = (256, 256)
+        screen.blit(score, scoreRect)
+        restartButton.draw(screen)
+
+
+    elif state == "mainMenu":
         screen.fill((100, 100, 100))
         screen.blit(title, titleRect)
         screen.blit(description, descriptionRect)
