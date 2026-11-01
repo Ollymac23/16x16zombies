@@ -55,7 +55,7 @@ def GeneratePos():
     x = (rand.randint(0, 15))*TILE
     y = (rand.randint(0, 15))*TILE
 
-    return (x, y)
+    return ((x, y), (x//32, y//32))
 
 
 class Player(pygame.sprite.Sprite):
@@ -122,9 +122,9 @@ class Zombie(pygame.sprite.Sprite):
             image.fill((64, 150, 64))
         self.image = image
         self.rect = self.image.get_rect()
-        pos = GeneratePos()
-        while pos in rocks:
-            pos = GeneratePos()
+        pos, tilePos = GeneratePos()
+        while tilePos in rocks:
+            pos, tilePos = GeneratePos()
         self.rect.topleft = pos
 
 
@@ -179,30 +179,30 @@ class Button:
 
 
 class Coin(pygame.sprite.Sprite):
-    def __init__(self, image=None):
+    def __init__(self, rocks, image=None):
         super().__init__()
-        global rocks
         if image == None:
             image = pygame.Surface((TILE, TILE))
             image.fill((250, 230, 0))
         self.image = image
         self.rect = self.image.get_rect()
-        pos = GeneratePos()
-        while pos in rocks:
-            pos = GeneratePos()
-        j, k = pos
+        pos, tilePos = GeneratePos()
+        j, k = tilePos
         while j < 3 and k < 3:
-            pos = GeneratePos()
-            j, k = pos
+            pos, tilePos = GeneratePos()
+            j, k = tilePos
         while j > 12 and k > 12:
-            pos = GeneratePos()
-            j, k = pos
-        self.rect.topleft = (j*TILE, k*TILE)
+            pos, tilePos = GeneratePos()
+            j, k = tilePos
+        while tilePos in rocks:
+            pos, tilePos = GeneratePos()
+            j, k = tilePos
+        self.rect.topleft = (j*32, k*32)
         self.collected = False
     def update(self):
         if pygame.sprite.spritecollide(player, coins, False):
             for sprite in coins:
-                if sprite.topleft == player.topleft:
+                if sprite.rect.topleft == player.rect.topleft and sprite.collected == False:
                     player.coins += 1
                     sprite.collected = True
 
@@ -218,6 +218,7 @@ def FinishGame():
     timeStop = pygame.time.get_ticks()
     global state
     state = "finished"
+    print(player.coins)
 
 def UpdateHighScore(score):
     global highScore
@@ -229,6 +230,10 @@ def ReturnMenu():
     state = "mainMenu"
     ResetGame()
 
+def GameOver():
+    global state
+    state = "gameOver"
+    ResetGame()
 
 buttonFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
 
@@ -246,8 +251,7 @@ finishFlag.add(Flag())
 rocks = []
 
 
-for i in range(3):
-    coins.add(Coin())
+
 
 player = Player(16, 16)
 all_sprites = pygame.sprite.Group(player)
@@ -289,6 +293,8 @@ def ResetGame():
         rocks.append((j, k))
         obstacles.add(Rock(j, k))
     for i in range(WEB_COUNT):
+        j = rand.randint(0, 15)
+        k = rand.randint(0, 15)
         if j < 3 and k < 3:
             continue
         if j > 12 and k > 12:
@@ -299,6 +305,9 @@ def ResetGame():
 
     for i in range(ZOMBIE_COUNT):
         zombies.add(Zombie())
+    coins.empty()
+    for i in range(3):
+        coins.add(Coin(rocks))
 
 
     player.health = 3
