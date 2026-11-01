@@ -38,6 +38,14 @@ PLAYER_IMAGES = [
     for i in range(4)
     ]
 
+
+coinUncollectedImg = pygame.transform.scale_by(pygame.image.load(ASSETS / "CoinUncollected.png").convert_alpha(), SCALE)
+coinCollectedImg = pygame.transform.scale_by(pygame.image.load(ASSETS / "CoinUncollected.png").convert_alpha(), SCALE)
+RockImg = pygame.transform.scale_by(pygame.image.load(ASSETS / "Rock.png").convert_alpha(), SCALE)
+WebImg = pygame.transform.scale_by(pygame.image.load(ASSETS / "Web.png").convert_alpha(), SCALE)
+ZombieImg = pygame.transform.scale_by(pygame.image.load(ASSETS / "Zombie.png").convert_alpha(), SCALE)
+FlagImg = pygame.transform.scale_by(pygame.image.load(ASSETS / "Flag.png",).convert_alpha(), SCALE)
+
 def GenerateMove():
     direction = rand.randint(0, 3)
     match direction:
@@ -444,3 +452,5 @@ while running:
 
 
 pygame.quit()
+
+
