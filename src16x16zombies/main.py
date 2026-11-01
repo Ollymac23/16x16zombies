@@ -338,8 +338,6 @@ def ResetGame():
 ResetGame()
 while running:
 
-    
-
     frameCount += 1
     dt = clock.tick(60)
     moveTimer = max(0, moveTimer - dt)
@@ -418,7 +416,10 @@ while running:
 
         time = (timeStop - timeBegin)/1000
         UpdateHighScore(time)
-        screen.fill((100, 100, 100))
+        if player.coins > 2:
+            screen.fill((255, 230, 0))
+        else:
+            screen.fill((100, 100, 100))
         highScoreText = titleFont.render(f"Best time: {highScore}s", False, (255, 255, 255))
         highScoreRect = highScoreText.get_rect()
         highScoreRect.center = (256, 128)
@@ -439,6 +440,7 @@ while running:
         screen.blit(title, titleRect)
         screen.blit(description, descriptionRect)
         startButton.draw(screen)
+
 
     elif state == "gameOver":
         screen.fill((100, 10, 10))
