@@ -1,6 +1,13 @@
 import pygame
 from pathlib import Path
 import random as rand
+import sys
+
+
+def resource_path(relative):
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / relative
+    return Path(__file__).resolve().parent.parent / relative
 
 
 pygame.init()
@@ -13,7 +20,7 @@ highScore = None
 
 
 
-ASSETS = Path(__file__).resolve().parent.parent / "assets"
+ASSETS = resource_path("assets")
 SCALE = 2
 ZOMBIE_COUNT = 6
 distMove = 32
@@ -70,7 +77,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, width, height):
         super().__init__()
         self.health = 30
-        self.image = PLAYER_IMAGES[((self.health)//10)]
+        self.image = PLAYER_IMAGES[3]
         self.rect = self.image.get_rect(center=(width, height))
         self.pos = pygame.Vector2(self.rect.center)
         self.coins = 0
@@ -78,7 +85,7 @@ class Player(pygame.sprite.Sprite):
 
     def update(self):
         self.pos = pygame.Vector2(self.rect.center)
-        self.image = PLAYER_IMAGES[((self.health)//10)]
+        self.image = PLAYER_IMAGES[3]
         self.rect = self.image.get_rect(center=self.pos)
         if pygame.sprite.spritecollide(player, finishFlag, False):
             FinishGame()
@@ -216,6 +223,7 @@ class Coin(pygame.sprite.Sprite):
                 if sprite.rect.topleft == player.rect.topleft and sprite.collected == False:
                     player.coins += 1
                     sprite.collected = True
+                    coins.remove(sprite)
 
 
 def StartGame():
@@ -278,8 +286,7 @@ titleRect = title.get_rect(center=(256, 64))
 descriptionFont = pygame.font.Font(ASSETS / "Pixelta.ttf", 32)
 descriptionFont.align = pygame.FONT_CENTER
 description = descriptionFont.render("A tile based game. You must reach the green flag" \
-" without being killed by the zombies. A score is" \
-" calculated by speed and how many items you collect.", False, (255, 255, 255), wraplength=512,)
+" without being killed by the zombies. Your time will be shown. Try collect all 3 coins!", False, (255, 255, 255), wraplength=512,)
 descriptionRect = description.get_rect(center=(256, 200))
 
 #other text for dying
@@ -456,3 +463,4 @@ while running:
 pygame.quit()
 
 
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzaaaasasasasasasasssdsdsdsdcdcccccccsdssssaaaaaaassasssdddddddddddddddddddddsdsdsdddddddddddddddddddsdsdsdsssssssssssssssssssssssssssssssssssssssddddddddddsdsdsdsdsdsdsdsddddddddddssssssssssddddddddddddddssssssssssddddsdsdddddddsdssssssdsdsdsdsdsdddssssssssssssccccddddddddsdsddsssssssssssddddddddsaaaaaaaaaaaaaaaaaaaasasssssssdddddddddsssssdxxsssssssssssssssdxzzzzzzzzzzzzzzzzzxzxssssszzzzzzzzzzzzzzxxxxxxxxxssssssssssxzzzzzzzzzxxxxxxzzzzzzzxzxzxzzzzzzzxxxxxxxxxxxxxxxxzzzzzzxzxzxxxxzxzxxxxsdddddsdsdsdsdsdsdsdsddsdddsssssssssssssssssssssssssssssssssssssssssssssssssssssssddsdsdsdsdsdsdsdsdsddddddsdsddddddddsssssssdddddddsssssssssssssssssssszsssssssdssssssdddsdsdsssddssssssaaassssaaaaaaaaaaaaaaaaaasssssasasssasaaaasssaaassssssssssasssssaaaaaaaaaaaaaaaaassssasasasaaasasasasasasasasasasasaaasasasasasasasasasasasasasasasasasasasasasasasasasasasssasasasasasasasasasssssssssssssaaaaaaaaaaaaaaaasssssssssssssssssasasssssaaaaaassssaaaaaaaaaaaaaassssaaaaaaaaaaaaaasasssaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaasassaasasasasasasasasasasasasasasasassssssssssdddssafffeeeeeeqwqweqweqweqweqweqwweeqqwweeqqwweehgvvbvbvccvbnmbnvbvbccvbnm,mbvccxxcxzdxxxxxxssssassafffmmmmmmmmmnmmnnnnnnnnnnnnbvvvbvnvbnvbnbbvbnvbnvbvbnvbnvbnvbnnvbnvbbvbvbnvbnvbnvbnvbnbnvbnvbbnvbnvbnvbnvbnvbnvbnvbnvbnvbnvbnnvnvbnvbnvbnbbnvbnvbnvbvnvbnvbnvbnvbnvbnvbnvbnvbnvbnvbn
